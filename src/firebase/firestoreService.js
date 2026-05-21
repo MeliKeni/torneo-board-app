@@ -1,91 +1,124 @@
-import { db } from "./config";
+import { db, auth } from "./config";
 import { 
   collection, 
   addDoc, 
   onSnapshot, 
-  query, 
-  orderBy, 
-  where, 
   doc, 
+  updateDoc, 
   deleteDoc, 
-  updateDoc 
+  getDoc,
+  query, 
+  where 
 } from "firebase/firestore";
 
-// --- JUEGOS ---
-export const addGame = async (gameName, description) => {
+// ==========================================
+// 👤 SERVICIOS DE USUARIOS Y NICKNAMES
+// ==========================================
+
+// Traer el nickname de un usuario por su UID
+export const getUserNickname = async (uid) => {
   try {
-    const docRef = await addDoc(collection(db, "games"), {
-      name: gameName,
-      description: description,
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().nickname;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error al traer nickname:", error);
+    return null;
+  }
+};
+
+// ==========================================
+// 🎲 SERVICIOS DE JUEGOS (Privados por Creador)
+// ==========================================
+
+// Añadir un juego asociándolo al ID del usuario que lo crea
+export const addGame = async (name, description, creatorId) => {
+  try {
+    await addDoc(collection(db, "games"), {
+      name,
+      description,
+      creatorId, // Filtro para que no sea global
       createdAt: new Date()
     });
-    return docRef.id;
   } catch (error) {
     console.error("Error al añadir juego:", error);
     throw error;
   }
 };
 
-export const getGamesStream = (callback) => {
-  const q = query(collection(db, "games"), orderBy("createdAt", "desc"));
+// Escuchar los juegos creados ÚNICAMENTE por el usuario logueado
+export const getGamesStream = (userId, callback) => {
+  if (!userId) return () => {};
+  
+  const q = query(
+    collection(db, "games"), 
+    where("creatorId", "==", userId)
+  );
+  
   return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    const games = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(games);
   });
 };
 
-// MODIFICAR JUEGO
-export const updateGame = async (gameId, newName, newDesc) => {
+// Actualizar datos de un juego
+export const updateGame = async (gameId, name, description) => {
   try {
     const gameRef = doc(db, "games", gameId);
-    await updateDoc(gameRef, { name: newName, description: newDesc });
+    await updateDoc(gameRef, { name, description });
   } catch (error) {
-    console.error("Error al editar juego:", error);
+    console.error("Error al actualizar juego:", error);
     throw error;
   }
 };
 
-// ELIMINAR JUEGO
+// Eliminar un juego de la lista
 export const deleteGame = async (gameId) => {
   try {
-    await deleteDoc(doc(db, "games", gameId));
+    const gameRef = doc(db, "games", gameId);
+    await deleteDoc(gameRef);
   } catch (error) {
     console.error("Error al eliminar juego:", error);
     throw error;
   }
 };
 
+// ==========================================
+// 📝 SERVICIOS DE PARTIDAS (Compartidas con Amigos)
+// ==========================================
 
-// --- PARTIDAS ---
-// Ahora recibe un array de jugadores con sus nombres y puntos
-export const addMatch = async (gameId, playersList) => {
-  try {
-    const docRef = await addDoc(collection(db, "matches"), {
-      gameId: gameId,
-      players: playersList, // Guarda ej: [{name: "Agus", points: 15}, {name: "Ivo", points: 12}]
-      createdAt: new Date()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error("Error al añadir partida:", error);
-    throw error;
-  }
-};
-
-// Traemos las partidas. Sacamos el 'orderBy' temporalmente para evitar el error de índice de Firebase
+// Escuchar partidas de un juego donde yo esté incluido en el array 'sharedWith'
 export const getMatchesStream = (gameId, callback) => {
-  const q = query(collection(db, "matches"), where("gameId", "==", gameId));
+  const currentUser = auth.currentUser;
+  if (!currentUser || !gameId) return () => {};
+
+  const q = query(
+    collection(db, `games/${gameId}/matches`), 
+    where("sharedWith", "array-contains", currentUser.uid)
+  );
+
   return onSnapshot(q, (snapshot) => {
-    const matches = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Ordenamos acá en memoria por fecha para que no falle el stream
-    matches.sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
-    callback(matches);
+    const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Ordenar por fecha descendente
+    const sortedMatches = matches.sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : 0;
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : 0;
+      return dateB - dateA;
+    });
+
+    callback(sortedMatches);
   });
 };
 
-// ELIMINAR PARTIDA
-export const deleteMatch = async (matchId) => {
+// Eliminar una partida del historial sabiendo a qué juego pertenece
+export const deleteMatch = async (gameId, matchId) => {
   try {
-    await deleteDoc(doc(db, "matches", matchId));
+    const matchRef = doc(db, "games", gameId, "matches", matchId);
+    await deleteDoc(matchRef);
   } catch (error) {
     console.error("Error al eliminar partida:", error);
     throw error;
