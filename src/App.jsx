@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, Link } from 'react-router-dom';
 import { auth, db } from './firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { registerUser, loginUser, logoutUser } from './firebase/authService';
@@ -20,7 +21,8 @@ function App() {
   
   // Navegación de Pestañas e Interfaz Principal
   const [isRegistering, setIsRegistering] = useState(false);
-  const [activeTab, setActiveTab] = useState('juegos'); // 'juegos' o 'amigos'
+  const location = useLocation();
+  const activeTab = location.pathname === '/amigos' ? 'amigos' : 'juegos';
 
   // Estados para Juegos
   const [games, setGames] = useState([]);
@@ -275,8 +277,8 @@ function App() {
         <h1>🏆 Torneo Board App</h1>
         {user && (
           <div style={{ display: 'flex', gap: '5px' }}>
-            <button onClick={() => setActiveTab('juegos')} style={{ padding: '8px 15px', background: activeTab === 'juegos' ? 'blue' : '#ccc', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>Juegos y Partidas</button>
-            <button onClick={() => setActiveTab('amigos')} style={{ padding: '8px 15px', background: activeTab === 'amigos' ? 'blue' : '#ccc', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>Amigos ({friends.length})</button>
+            <Link to="/juegos" style={{ padding: '8px 15px', background: activeTab === 'juegos' ? 'blue' : '#ccc', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', textDecoration: 'none' }}>Juegos y Partidas</Link>
+            <Link to="/amigos" style={{ padding: '8px 15px', background: activeTab === 'amigos' ? 'blue' : '#ccc', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', textDecoration: 'none' }}>Amigos ({friends.length})</Link>
           </div>
         )}
       </div>
