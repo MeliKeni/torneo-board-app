@@ -437,8 +437,11 @@ function App() {
         </div>
         </div>
       ) : (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
-          <div style={{ width: '400px', height: '440px', padding: '40px', borderRadius: '28px', background: 'var(--clr-surface)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', overflow: 'hidden' }}>
+          <div className="circle-red" />
+          <div className="circle-blue" />
+          <div className="circle-green" />
+          <div style={{ width: '400px', height: '440px', padding: '40px', borderRadius: '28px', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.6)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
             {!isRegistering ? (
               <>
                 <h1 style={{ textAlign: 'center', color: 'black', fontSize: '40px', fontWeight: 'bold', margin: '0 0 30px 0' }}>Inicio de sesión</h1>

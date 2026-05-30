@@ -63,6 +63,74 @@ body {
   margin: 0;
 }
 
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(300px, -200px); }
+  50% { transform: translate(500px, 150px); }
+  75% { transform: translate(150px, 350px); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-350px, 180px); }
+  50% { transform: translate(-550px, -120px); }
+  75% { transform: translate(-200px, -300px); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-200px, -250px); }
+  50% { transform: translate(200px, -150px); }
+  75% { transform: translate(-300px, 200px); }
+}
+
+.circle-red {
+  position: absolute;
+  width: 900px;
+  height: 900px;
+  border-radius: 50%;
+  background: #98dbff90;
+  top: -15%;
+  left: -20%;
+  animation: float1 16s ease-in-out infinite;
+  mix-blend-mode: multiply;
+  filter: blur(80px);
+}
+
+.circle-blue {
+  position: absolute;
+  width: 850px;
+  height: 850px;
+  border-radius: 50%;
+  background: #ff5e868e;
+  bottom: -15%;
+  right: -20%;
+  animation: float2 18s ease-in-out infinite;
+  mix-blend-mode: multiply;
+  filter: blur(80px);
+}
+
+.circle-green {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: #e0aaff50;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  animation: float3 20s ease-in-out infinite;
+  mix-blend-mode: multiply;
+  filter: blur(80px);
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-250px, 120px); }
+  50% { transform: translate(-400px, -80px); }
+  75% { transform: translate(-150px, -200px); }
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
