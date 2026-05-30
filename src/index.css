@@ -1,4 +1,13 @@
 :root {
+  --clr-primary: #3b82f6;
+  --clr-success: #22c55e;
+  --clr-danger: #ef4444;
+  --clr-warning: #f59e0b;
+  --clr-surface: #f3f4f6;
+  --clr-border: #d1d5db;
+  --clr-text: #1f2937;
+  --clr-text-muted: #6b7280;
+
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
