@@ -1,7 +1,7 @@
 :root {
-  --clr-primary: #3b82f6;
-  --clr-success: #22c55e;
-  --clr-danger: #ef4444;
+  --clr-primary: #ffa7e0;
+  --clr-success: #d8b6ff;
+  --clr-danger: #ff455e;
   --clr-warning: #f59e0b;
   --clr-surface: #f3f4f6;
   --clr-border: #d1d5db;
@@ -88,7 +88,7 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #e9d5ff inset !important;
-  -webkit-text-fill-color: #000 !important;
+  -webkit-text-fill-color: #000000 !important;
   caret-color: #000;
 }
 
@@ -118,7 +118,7 @@ input:-webkit-autofill:active {
   width: 900px;
   height: 900px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--clr-danger) 25%, transparent);
+  background: color-mix(in srgb, var(--clr-fondo) 25%, transparent);
   top: -15%;
   left: -20%;
   animation: float1 16s ease-in-out infinite;

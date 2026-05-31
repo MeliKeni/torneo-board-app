@@ -347,20 +347,21 @@ function App() {
               </div>
 
               <h3 style={{ textAlign: 'center', color: 'var(--clr-black)', fontWeight: 'bold', fontSize: '22px', margin: '40px 0 20px' }}>Mis juegos</h3>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'flex-start' }}>
                 {games.map(game => (
-                  <li key={game.id} style={{ background: selectedGame?.id === game.id ? 'color-mix(in srgb, var(--clr-lilac) 20%, transparent)' : 'var(--clr-surface)', padding: '12px 20px', marginBottom: '8px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div onClick={() => { setMatches([]); setSelectedGame(game); setPlayerCount(0); }} style={{ cursor: 'pointer', flex: 1 }}>
-                      <strong style={{ color: 'var(--clr-black)' }}>{game.name}</strong> <br />
-                      <small style={{ color: 'var(--clr-text-muted)' }}>{game.description || 'Sin descripción'}</small>
+                  <div key={game.id} onClick={() => { if (selectedGame?.id !== game.id) { setMatches([]); setSelectedGame(game); setPlayerCount(0); } }}
+                    style={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '150px', maxWidth: 'calc(33.333% - 16px)', padding: '24px', borderRadius: '20px', background: selectedGame?.id === game.id ? 'color-mix(in srgb, var(--clr-lilac) 25%, transparent)' : 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: selectedGame?.id === game.id ? '1px solid color-mix(in srgb, var(--clr-lilac) 60%, transparent)' : '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <strong style={{ color: 'var(--clr-black)', fontSize: '16px' }}>{game.name}</strong>
+                      <div style={{ color: 'var(--clr-text-muted)', fontSize: '14px', marginTop: '4px' }}>{game.description || 'Sin descripción'}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                      <button onClick={() => handleStartEditGame(game)} style={{ background: 'var(--clr-warning)', border: 'none', padding: '4px 8px', cursor: 'pointer', borderRadius: '6px' }}>✏️</button>
-                      <button onClick={() => handleDeleteGameClick(game.id)} style={{ background: 'var(--clr-danger)', color: 'var(--clr-white)', border: 'none', padding: '4px 8px', cursor: 'pointer', borderRadius: '6px' }}>🗑️</button>
+                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', marginTop: '14px' }}>
+                      <button onClick={(e) => { e.stopPropagation(); handleStartEditGame(game); }} style={{ background: 'var(--clr-warning)', border: 'none', padding: '6px 10px', cursor: 'pointer', borderRadius: '8px', fontSize: '14px' }}>✏️</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteGameClick(game.id); }} style={{ background: 'var(--clr-danger)', color: 'var(--clr-white)', border: 'none', padding: '6px 10px', cursor: 'pointer', borderRadius: '8px', fontSize: '14px' }}>🗑️</button>
                     </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
 
               {selectedGame && (
                 <div style={{ marginTop: '40px' }}>
