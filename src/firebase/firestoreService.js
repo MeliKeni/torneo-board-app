@@ -34,7 +34,7 @@ export const addGame = async (name, description, creatorId) => {
       createdAt: new Date()
     });
   } catch (error) {
-    console.error("Error al añadir juego:", error);
+    console.error("Error al añadir juego:", error.code, error.message);
     throw error;
   }
 };
