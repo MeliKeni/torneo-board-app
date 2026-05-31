@@ -45,9 +45,12 @@
   --clr-border: #374151;
   --clr-text: #f3f4f6;
   --clr-text-muted: #9ca3af;
+  --clr-black: #ffffff;
+  --clr-white: #000000;
   --clr-lilac: #b884d4;
   --clr-lilac-light: #c99be0;
   --clr-card: #2d3748;
+  --clr-bg: #111827;
 
   --text: #9ca3af;
   --text-h: #f3f4f6;
@@ -518,7 +521,7 @@ code {
   border-radius: 25px;
   background: var(--clr-black);
   border: none;
-  color: white;
+  color: var(--clr-white);
   font-weight: bold;
   cursor: pointer;
   font-size: 14px;
