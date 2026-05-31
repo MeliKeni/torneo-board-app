@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
 import { auth, db } from './firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { registerUser, loginUser, logoutUser } from './firebase/authService';
@@ -41,7 +41,9 @@ function App() {
   };
   const [isRegistering, setIsRegistering] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const activeTab = location.pathname === '/amigos' ? 'amigos' : 'juegos';
+  const gameIdFromPath = location.pathname.startsWith('/juegos/') ? location.pathname.split('/')[2] : null;
 
   const [games, setGames] = useState([]);
   const [gameName, setGameName] = useState('');
@@ -51,7 +53,7 @@ function App() {
   const [selectedGame, setSelectedGame] = useState(null);
   const [matches, setMatches] = useState([]);
   const [playerCount, setPlayerCount] = useState(0); 
-  const [playersInput, setPlayersInput] = useState([]); 
+  const [playersInput, setPlayersInput] = useState([]);
 
   const [searchNick, setSearchNick] = useState('');
   const [friends, setFriends] = useState([]);
@@ -80,10 +82,24 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    if (!user || !selectedGame) return;
-    const unsubscribeMatches = getMatchesStream(selectedGame.id, (updatedMatches) => setMatches(updatedMatches));
+    if (gameIdFromPath) {
+      const found = games.find(g => g.id === gameIdFromPath) || null;
+      setSelectedGame(found);
+    } else {
+      setSelectedGame(null);
+    }
+  }, [gameIdFromPath, games]);
+
+  useEffect(() => {
+    if (!user || !gameIdFromPath) {
+      setMatches([]);
+      return;
+    }
+    const unsubscribeMatches = getMatchesStream(gameIdFromPath, (updatedMatches) => setMatches(updatedMatches));
+    setPlayerCount(0);
+    setPlayersInput([]);
     return () => unsubscribeMatches();
-  }, [user, selectedGame]);
+  }, [user, gameIdFromPath]);
 
   useEffect(() => {
     if (!user) return;
@@ -162,7 +178,7 @@ function App() {
   const handleDeleteGameClick = async (gameId) => {
     if (confirm('¿Seguro querés eliminar este juego? Se borrará de la lista.')) {
       try {
-        if (selectedGame?.id === gameId) setSelectedGame(null);
+        if (gameIdFromPath === gameId) navigate('/juegos');
         await deleteGame(gameId);
       } catch { alert('Error al borrar juego'); }
     }
@@ -287,28 +303,22 @@ function App() {
   return (
     <>
       {user && (
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid var(--clr-border)', background: 'var(--clr-surface)', boxSizing: 'border-box' }}>
-          <span style={{ fontWeight: 'bold', fontSize: '18px' }}>TP2</span>
-          <div style={{ position: 'relative' }}
+        <div className="navbar">
+          <span className="navbar-brand">TP2</span>
+          <div className="dropdown-wrapper"
             onMouseEnter={() => setShowLogout(true)}
             onMouseLeave={() => setShowLogout(false)}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--clr-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}>
-              👤
-            </div>
+            <div className="avatar">👤</div>
             {showDropdown && (
-              <div style={{ position: 'absolute', top: '100%', right: '0', zIndex: 10 }}
+              <div className="dropdown-menu"
                 onMouseEnter={() => setDropdownHover(true)}
                 onMouseLeave={() => setDropdownHover(false)}>
-                <div style={{ marginTop: '8px', background: 'color-mix(in srgb, var(--clr-white) 70%, transparent)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid color-mix(in srgb, var(--clr-border) 50%, transparent)', borderRadius: '12px', boxShadow: '0 4px 20px color-mix(in srgb, var(--clr-black) 10%, transparent)', minWidth: '160px', overflow: 'hidden' }}>
-                  <button onClick={toggleTheme}
-                    style={{ width: '100%', padding: '10px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '14px', color: 'var(--clr-text)' }}>
-                    {isDark ? '☀️ Modo claro' : '🌙 Modo oscuro'}
-                  </button>
-                  <button onClick={() => { logoutUser(); setSelectedGame(null); setMatches([]); setPlayerCount(0); }}
-                    style={{ width: '100%', padding: '10px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '14px', color: 'var(--clr-danger)' }}>
-                    Cerrar sesión
-                  </button>
-                </div>
+                <button onClick={toggleTheme} className="dropdown-item">
+                  {isDark ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+                </button>
+                <button onClick={() => { logoutUser(); navigate('/login'); }} className="dropdown-item dropdown-item--danger">
+                  Cerrar sesión
+                </button>
               </div>
             )}
           </div>
@@ -316,130 +326,134 @@ function App() {
       )}
 
       {user ? (
-        <div style={{ fontFamily: 'sans-serif', background: 'var(--clr-bg)', minHeight: 'calc(100vh - 57px)', padding: '30px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '30px' }}>
-            <Link to="/juegos" style={{ textDecoration: 'none', color: 'var(--clr-black)', fontWeight: 'bold', fontSize: '22px', padding: '8px 20px', borderBottom: activeTab === 'juegos' ? '3px solid var(--clr-lilac-light)' : '3px solid transparent' }}>
+        <div className="app-content">
+          <div className="tab-bar">
+            <Link to="/juegos" className={`tab-link ${activeTab === 'juegos' ? 'tab-link--active' : ''}`}>
               Juegos y partidos
             </Link>
-            <span style={{ width: '1.5px', height: '24px', background: 'var(--clr-black)', margin: '0 16px' }} />
-            <Link to="/amigos" style={{ textDecoration: 'none', color: 'var(--clr-black)', fontWeight: 'bold', fontSize: '22px', padding: '8px 20px', borderBottom: activeTab === 'amigos' ? '3px solid var(--clr-lilac-light)' : '3px solid transparent' }}>
+            <span className="tab-sep" />
+            <Link to="/amigos" className={`tab-link ${activeTab === 'amigos' ? 'tab-link--active' : ''}`}>
               Amigos
             </Link>
           </div>
 
           {activeTab === 'juegos' ? (
-              <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-              <div style={{ width: '100%', padding: '40px', borderRadius: '28px', background: 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                <h2 style={{ textAlign: 'center', color: 'var(--clr-black)', fontSize: '40px', fontWeight: 'bold', margin: '0 0 30px 0' }}>{editingGameId ? gameName : 'Añade juego de mesa'}</h2>
-                <form onSubmit={handleSaveGame} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>Nombre</label>
-                    <input type="text" value={gameName} onChange={(e) => setGameName(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
+            <div className="content-wrapper">
+              {gameIdFromPath && selectedGame ? (
+                <div>
+                  <div className="mb-20">
+                    <button onClick={() => navigate('/juegos')} className="btn--back">← Volver</button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>Descripcion</label>
-                    <input type="text" value={gameDesc} onChange={(e) => setGameDesc(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
-                  </div>
-                  <button type="submit" style={{ padding: '12px', fontSize: '15px', background: 'var(--clr-black)', color: 'var(--clr-white)', border: 'none', cursor: 'pointer', borderRadius: '25px', fontWeight: 'bold', marginTop: '4px' }}>
-                    {editingGameId ? 'Actualizar' : 'Agregar partida'}
-                  </button>
-                </form>
-              </div>
-
-              <h3 style={{ textAlign: 'center', color: 'var(--clr-black)', fontWeight: 'bold', fontSize: '22px', margin: '40px 0 20px' }}>Mis juegos</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'flex-start' }}>
-                {games.map(game => (
-                  <div key={game.id} onClick={() => { if (selectedGame?.id !== game.id) { setMatches([]); setSelectedGame(game); setPlayerCount(0); } }}
-                    style={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '150px', maxWidth: 'calc(33.333% - 16px)', padding: '24px', borderRadius: '20px', background: selectedGame?.id === game.id ? 'color-mix(in srgb, var(--clr-lilac) 25%, transparent)' : 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: selectedGame?.id === game.id ? '1px solid color-mix(in srgb, var(--clr-lilac) 60%, transparent)' : '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <strong style={{ color: 'var(--clr-black)', fontSize: '16px' }}>{game.name}</strong>
-                      <div style={{ color: 'var(--clr-text-muted)', fontSize: '14px', marginTop: '4px' }}>{game.description || 'Sin descripción'}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', marginTop: '14px' }}>
-                      <button onClick={(e) => { e.stopPropagation(); handleStartEditGame(game); }} style={{ background: 'var(--clr-warning)', border: 'none', padding: '6px 10px', cursor: 'pointer', borderRadius: '8px', fontSize: '14px' }}>✏️</button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteGameClick(game.id); }} style={{ background: 'var(--clr-danger)', color: 'var(--clr-white)', border: 'none', padding: '6px 10px', cursor: 'pointer', borderRadius: '8px', fontSize: '14px' }}>🗑️</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {selectedGame && (
-                <div style={{ marginTop: '40px' }}>
-                  <h3 style={{ textAlign: 'center', color: 'var(--clr-black)', fontSize: '20px', fontWeight: 'bold', margin: '0 0 20px' }}>{selectedGame.name} - Partidas</h3>
+                  <h3 className="heading-md">{selectedGame.name} - Partidas</h3>
                   {playerCount === 0 ? (
-                      <form onSubmit={handleSetPlayerCount} style={{ width: '100%', padding: '30px', borderRadius: '28px', background: 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box' }}>
-                        <h4 style={{ textAlign: 'center', color: 'var(--clr-black)', fontWeight: 'bold', margin: '0 0 16px', fontSize: '18px' }}>¿Cuántos jugadores?</h4>
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
-                          <input type="number" name="count" defaultValue="2" min="1" style={{ padding: '12px 16px', borderRadius: '25px', border: '1px solid var(--clr-border)', fontSize: '15px', outline: 'none', color: 'var(--clr-black)', background: 'var(--clr-white)', width: '80px' }} />
-                          <button type="submit" style={{ padding: '12px 28px', borderRadius: '25px', background: 'var(--clr-black)', color: 'var(--clr-white)', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>Continuar</button>
+                      <form onSubmit={handleSetPlayerCount} className="glass-card glass-card--sm glass-card--center">
+                        <h4 className="heading-sm">¿Cuántos jugadores?</h4>
+                        <div className="flex-row-center">
+                          <input type="number" name="count" defaultValue="2" min="1" className="input--narrow" />
+                          <button type="submit" className="btn btn--primary btn--md">Continuar</button>
                         </div>
                       </form>
                   ) : (
-                      <form onSubmit={handleCreateMatch} style={{ width: '100%', padding: '30px', borderRadius: '28px', background: 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-                        <h4 style={{ textAlign: 'center', color: 'var(--clr-black)', fontWeight: 'bold', margin: '0 0 16px', fontSize: '18px' }}>Anotar Puntos</h4>
+                      <form onSubmit={handleCreateMatch} className="glass-card glass-card--sm">
+                        <h4 className="heading-sm">Anotar Puntos</h4>
                         {playersInput.map((player, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-                            <span style={{ color: 'var(--clr-black)', fontWeight: 'bold' }}>#{idx + 1}</span>
-                            <input type="text" placeholder="Nombre o @nickname" value={player.name} onChange={(e) => handlePlayerInputChange(idx, 'name', e.target.value)} style={{ flex: 2, padding: '12px 16px', borderRadius: '25px', border: '1px solid var(--clr-border)', fontSize: '15px', outline: 'none', color: 'var(--clr-black)', background: 'var(--clr-white)' }} />
-                            <input type="number" placeholder="Pts" value={player.points} onChange={(e) => handlePlayerInputChange(idx, 'points', e.target.value)} style={{ flex: 1, padding: '12px 16px', borderRadius: '25px', border: '1px solid var(--clr-border)', fontSize: '15px', outline: 'none', color: 'var(--clr-black)', background: 'var(--clr-white)' }} />
+                          <div key={idx} className="player-row">
+                            <span className="player-index">#{idx + 1}</span>
+                            <input type="text" placeholder="Nombre o @nickname" value={player.name} onChange={(e) => handlePlayerInputChange(idx, 'name', e.target.value)} className="input--flex2" />
+                            <input type="number" placeholder="Pts" value={player.points} onChange={(e) => handlePlayerInputChange(idx, 'points', e.target.value)} className="input--flex1" />
                           </div>
                         ))}
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
-                          <button type="submit" style={{ padding: '12px 28px', borderRadius: '25px', background: 'var(--clr-black)', color: 'var(--clr-white)', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>Guardar Partida</button>
-                          <button type="button" onClick={() => setPlayerCount(0)} style={{ padding: '12px 28px', borderRadius: '25px', background: 'color-mix(in srgb, var(--clr-white) 40%, transparent)', border: '1px solid var(--clr-border)', color: 'var(--clr-black)', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>Atrás</button>
+                        <div className="btn-group">
+                          <button type="submit" className="btn btn--primary btn--md">Guardar Partida</button>
+                          <button type="button" onClick={() => setPlayerCount(0)} className="btn btn--ghost btn--md">Atrás</button>
                         </div>
                       </form>
                   )}
 
-                  <h4 style={{ marginTop: '24px', color: 'var(--clr-black)', fontWeight: 'bold' }}>Historial:</h4>
-                  {matches.length === 0 ? <p style={{color:'var(--clr-text-muted)'}}>Sin partidas.</p> : (
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                  <h4 className="heading-xs">Historial:</h4>
+                  {matches.length === 0 ? <p className="text-muted">Sin partidas.</p> : (
+                    <ul className="list-reset">
                       {matches.map(match => {
                         const matchDate = match.createdAt?.toDate ? match.createdAt.toDate() : null;
                         return (
-                          <li key={match.id} style={{ background: 'var(--clr-surface)', border: '1px solid var(--clr-border)', padding: '12px', marginBottom: '8px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <li key={match.id} className="match-item">
                             <div>
-                              <small style={{ color: 'var(--clr-text-muted)' }}>📅 {matchDate ? matchDate.toLocaleDateString() : ''}</small>
-                              {match.players?.map((p, i) => <div key={i} style={{ color: 'var(--clr-text)' }}><strong>{p.name}</strong>: {p.points} pts</div>)}
+                              <small className="match-date">📅 {matchDate ? matchDate.toLocaleDateString() : ''}</small>
+                              {match.players?.map((p, i) => <div key={i} className="match-player"><strong>{p.name}</strong>: {p.points} pts</div>)}
                             </div>
-                            <button onClick={() => handleDeleteMatchClick(match.id)} style={{ background: 'var(--clr-danger)', color: 'var(--clr-white)', border: 'none', padding: '6px 10px', cursor: 'pointer', borderRadius: '6px' }}>Borrar</button>
+                            <button onClick={() => handleDeleteMatchClick(match.id)} className="btn--danger">Borrar</button>
                           </li>
                         );
                       })}
                     </ul>
                   )}
                 </div>
+              ) : (
+                <>
+                  <div className="glass-card">
+                    <h2 className="heading-xl">{editingGameId ? gameName : 'Añade juego de mesa'}</h2>
+                    <form onSubmit={handleSaveGame} className="form-stack">
+                      <div className="field-group">
+                        <label className="field-label">Nombre</label>
+                        <input type="text" value={gameName} onChange={(e) => setGameName(e.target.value)} className="form-input" />
+                      </div>
+                      <div className="field-group">
+                        <label className="field-label">Descripcion</label>
+                        <input type="text" value={gameDesc} onChange={(e) => setGameDesc(e.target.value)} className="form-input" />
+                      </div>
+                      <button type="submit" className="btn btn--primary btn--lg">
+                        {editingGameId ? 'Actualizar' : 'Agregar partida'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <h3 className="heading-lg">Mis juegos</h3>
+                  <div className="game-grid">
+                    {games.map(game => (
+                      <div key={game.id} onClick={() => navigate(`/juegos/${game.id}`)} className="game-card">
+                        <div className="game-card-body">
+                          <strong className="game-card-name">{game.name}</strong>
+                          <div className="game-card-desc">{game.description || 'Sin descripción'}</div>
+                        </div>
+                        <div className="game-card-actions">
+                          <button onClick={(e) => { e.stopPropagation(); handleStartEditGame(game); }} className="btn--icon btn--icon-warning">✏️</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteGameClick(game.id); }} className="btn--icon btn--icon-danger">🗑️</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           ) : (
-            <div style={{ maxWidth: '600px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+            <div className="amigos-grid">
               <div>
-                <div style={{ padding: '20px', borderRadius: '20px', background: 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', marginBottom: '20px' }}>
-                  <h3 style={{ fontWeight: 'bold', color: 'var(--clr-black)', margin: '0 0 12px' }}>🔍 Buscar Amigos</h3>
-                  <form onSubmit={handleSendFriendRequest} style={{ display: 'flex', gap: '10px' }}>
-                    <input type="text" placeholder="Buscar por nickname" value={searchNick} onChange={(e) => setSearchNick(e.target.value)} style={{ flex: 1, padding: '12px 16px', borderRadius: '25px', border: '1px solid var(--clr-border)', outline: 'none', color: 'var(--clr-black)', background: 'var(--clr-white)', fontSize: '15px' }} />
-                    <button type="submit" style={{ padding: '12px 20px', borderRadius: '25px', background: 'var(--clr-black)', color: 'var(--clr-white)', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>Agregar</button>
+                <div className="search-card">
+                  <h3 className="sub-heading mb-12">🔍 Buscar Amigos</h3>
+                  <form onSubmit={handleSendFriendRequest} className="search-form">
+                    <input type="text" placeholder="Buscar por nickname" value={searchNick} onChange={(e) => setSearchNick(e.target.value)} className="search-input" />
+                    <button type="submit" className="btn btn--primary btn--sm">Agregar</button>
                   </form>
                 </div>
-                <h3 style={{ fontWeight: 'bold', color: 'var(--clr-black)' }}>Mis Amigos:</h3>
-                {friends.length === 0 ? <p style={{color:'var(--clr-text-muted)'}}>Sin amigos.</p> : (
-                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                <h3 className="sub-heading">Mis Amigos:</h3>
+                {friends.length === 0 ? <p className="text-muted">Sin amigos.</p> : (
+                  <ul className="list-reset">
                     {friends.map((f, i) => (
-                      <li key={i} style={{ background: 'var(--clr-surface)', padding: '10px 16px', marginBottom: '6px', borderRadius: '12px', borderLeft: '4px solid var(--clr-success)' }}>
-                        <strong style={{ color: 'var(--clr-black)' }}>@{f.nickname}</strong>
+                      <li key={i} className="friend-item">
+                        <strong className="friend-name">@{f.nickname}</strong>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
               <div>
-                <h3 style={{ fontWeight: 'bold', color: 'var(--clr-black)' }}>📥 Solicitudes</h3>
-                {receivedRequests.length === 0 ? <p style={{color:'var(--clr-text-muted)'}}>Sin solicitudes.</p> : (
-                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                <h3 className="sub-heading">📥 Solicitudes</h3>
+                {receivedRequests.length === 0 ? <p className="text-muted">Sin solicitudes.</p> : (
+                  <ul className="list-reset">
                     {receivedRequests.map(req => (
-                      <li key={req.id} style={{ background: 'color-mix(in srgb, var(--clr-warning) 12%, transparent)', padding: '12px', marginBottom: '8px', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--clr-warning) 40%, transparent)' }}>
-                        <span style={{ color: 'var(--clr-black)' }}>👋 <strong>@{req.fromNickname}</strong></span>
-                        <button onClick={() => handleAcceptFriend(req.id)} style={{ marginTop: '8px', padding: '8px 16px', borderRadius: '25px', background: 'var(--clr-black)', border: 'none', color: 'var(--clr-white)', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>Aceptar</button>
+                      <li key={req.id} className="request-item">
+                        <span className="request-info">👋 <strong>@{req.fromNickname}</strong></span>
+                        <button onClick={() => handleAcceptFriend(req.id)} className="btn--accept">Aceptar</button>
                       </li>
                     ))}
                   </ul>
@@ -449,49 +463,49 @@ function App() {
           )}
         </div>
       ) : (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clr-white)', overflow: 'hidden' }}>
+        <div className="login-overlay">
           <div className="circle-red" />
           <div className="circle-blue" />
           <div className="circle-green" />
-          <div style={{ width: '400px', height: '440px', padding: '40px', borderRadius: '28px', background: 'color-mix(in srgb, var(--clr-white) 40%, transparent)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid color-mix(in srgb, var(--clr-white) 60%, transparent)', boxShadow: '0 8px 32px color-mix(in srgb, var(--clr-black) 10%, transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+          <div className="login-card">
             {!isRegistering ? (
               <>
-                <h1 style={{ textAlign: 'center', color: 'var(--clr-black)', fontSize: '40px', fontWeight: 'bold', margin: '0 0 30px 0' }}>Inicio de sesión</h1>
-                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>Email</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
+                <h1 className="heading-xl">Inicio de sesión</h1>
+                <form onSubmit={handleLogin} className="form-stack">
+                  <div className="field-group">
+                    <label className="field-label">Email</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>contraseña</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
+                  <div className="field-group">
+                    <label className="field-label">contraseña</label>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
                   </div>
-                  <button type="submit" style={{ padding: '12px', fontSize: '15px', background: 'var(--clr-black)', color: 'var(--clr-white)', border: 'none', cursor: 'pointer', borderRadius: '25px', fontWeight: 'bold', marginTop: '4px' }}>Inicia sesion</button>
+                  <button type="submit" className="btn btn--primary btn--lg">Inicia sesion</button>
                 </form>
-                <p style={{ textAlign: 'center', color: 'var(--clr-black)', fontSize: '15px', marginTop: '28px', cursor: 'pointer' }} onClick={() => { setIsRegistering(true); setError(''); }}>No tienes cuenta? <span style={{textDecoration: 'underline'}}>Registrate</span></p>
+                <p className="toggle-text" onClick={() => { setIsRegistering(true); setError(''); }}>No tienes cuenta? <span className="underline">Registrate</span></p>
               </>
             ) : (
               <>
-                <h1 style={{ textAlign: 'center', color: 'var(--clr-black)', fontSize: '40px', fontWeight: 'bold', margin: '0 0 22px 0' }}>Registro</h1>
-                <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>Nickname</label>
-                    <input type="text" value={nicknameInput} onChange={(e) => setNicknameInput(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
+                <h1 className="heading-xl heading-xl--tight">Registro</h1>
+                <form onSubmit={handleRegister} className="form-stack--tight">
+                  <div className="field-group--tight">
+                    <label className="field-label">Nickname</label>
+                    <input type="text" value={nicknameInput} onChange={(e) => setNicknameInput(e.target.value)} className="form-input" />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>Email</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
+                  <div className="field-group--tight">
+                    <label className="field-label">Email</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <label style={{ color: 'var(--clr-black)', fontSize: '15px', fontWeight: '600', display: 'block', textAlign: 'left' }}>contraseña</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px 16px', fontSize: '15px', borderRadius: '25px', border: '1px solid var(--clr-border)', background: 'var(--clr-white)', outline: 'none', color: 'var(--clr-black)' }} />
+                  <div className="field-group--tight">
+                    <label className="field-label">contraseña</label>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" />
                   </div>
-                  <button type="submit" style={{ padding: '12px', fontSize: '15px', background: 'var(--clr-black)', color: 'var(--clr-white)', border: 'none', cursor: 'pointer', borderRadius: '25px', fontWeight: 'bold', marginTop: '2px' }}>Crear cuenta</button>
+                  <button type="submit" className="btn btn--primary btn--lg mt-2">Crear cuenta</button>
                 </form>
-                <p style={{ textAlign: 'center', color: 'var(--clr-black)', fontSize: '15px', marginTop: '28px', cursor: 'pointer' }} onClick={() => { setIsRegistering(false); setError(''); }}>Ya tenes cuenta? <span style={{textDecoration: 'underline'}}>Inicia sesion</span></p>
+                <p className="toggle-text" onClick={() => { setIsRegistering(false); setError(''); }}>Ya tenes cuenta? <span className="underline">Inicia sesion</span></p>
               </>
             )}
-            {error && <p style={{ color: 'var(--clr-danger)', marginTop: '12px', fontSize: '14px', textAlign: 'center', fontWeight: 'bold' }}>{error}</p>}
+            {error && <p className="error-text">{error}</p>}
           </div>
         </div>
       )}
