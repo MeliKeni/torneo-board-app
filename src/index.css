@@ -13,7 +13,7 @@
   --clr-lilac-light: #E7B6F5;
   --clr-card: #D8D6D6;
   --clr-bg: #F5F1F3;
-  --clr-fondo:#60b8ffd2;
+  --clr-fondo:#a78bfad2;
 
   --text: #6b6375;
   --text-h: #08060d;
@@ -701,6 +701,11 @@ code {
   font-weight: bold;
 }
 
+:root.dark .login-overlay {
+  --clr-white: #ffffff;
+  --clr-black: #000000;
+}
+
 /* ===== Player rows ===== */
 .player-row {
   display: flex;
@@ -770,3 +775,20 @@ code {
 .mb-12 { margin-bottom: 12px; }
 .mb-20 { margin-bottom: 20px; }
 .mt-2  { margin-top: 2px; }
+
+.cursor {
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--clr-lilac-light) 60%, transparent);
+  background: color-mix(in srgb, var(--clr-white) 30%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+  z-index: 9999;
+  translate: -50% -50%;
+  transition: width 0.2s, height 0.2s;
+}
+
+

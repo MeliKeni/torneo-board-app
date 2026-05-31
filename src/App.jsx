@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
 import { auth, db } from './firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -19,7 +19,7 @@ function App() {
   const [nicknameInput, setNicknameInput] = useState(''); 
   const [error, setError] = useState('');
   const [showLogout, setShowLogout] = useState(false);
-  const [dropdownHover, setDropdownHover] = useState(false);
+  const dropdownRef = useRef(null);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') {
@@ -122,6 +122,31 @@ function App() {
 
     return () => { unsubRequests(); unsubFriends(); };
   }, [user]);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowLogout(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  useEffect(() => {
+    const cursor = document.createElement('div');
+    cursor.className = 'cursor';
+    document.body.appendChild(cursor);
+    const move = (e) => {
+      cursor.style.left = `${e.clientX}px`;
+      cursor.style.top = `${e.clientY}px`;
+    };
+    document.addEventListener('mousemove', move);
+    return () => {
+      document.removeEventListener('mousemove', move);
+      cursor.remove();
+    };
+  }, []);
 
   const handleRegister = async (e) => {
     e.preventDefault(); 
@@ -298,21 +323,15 @@ function App() {
     return <Navigate to="/juegos" replace />;
   }
 
-  const showDropdown = showLogout || dropdownHover;
-
   return (
     <>
       {user && (
         <div className="navbar">
           <span className="navbar-brand">TP2</span>
-          <div className="dropdown-wrapper"
-            onMouseEnter={() => setShowLogout(true)}
-            onMouseLeave={() => setShowLogout(false)}>
-            <div className="avatar">👤</div>
-            {showDropdown && (
-              <div className="dropdown-menu"
-                onMouseEnter={() => setDropdownHover(true)}
-                onMouseLeave={() => setDropdownHover(false)}>
+          <div className="dropdown-wrapper" ref={dropdownRef}>
+            <div className="avatar" onClick={() => setShowLogout(v => !v)}>👤</div>
+            {showLogout && (
+              <div className="dropdown-menu">
                 <button onClick={toggleTheme} className="dropdown-item">
                   {isDark ? '☀️ Modo claro' : '🌙 Modo oscuro'}
                 </button>
