@@ -11,11 +11,7 @@ import {
   where 
 } from "firebase/firestore";
 
-// ==========================================
-// 👤 SERVICIOS DE USUARIOS Y NICKNAMES
-// ==========================================
 
-// Traer el nickname de un usuario por su UID
 export const getUserNickname = async (uid) => {
   try {
     const docRef = doc(db, "users", uid);
@@ -30,17 +26,13 @@ export const getUserNickname = async (uid) => {
   }
 };
 
-// ==========================================
-// 🎲 SERVICIOS DE JUEGOS (Privados por Creador)
-// ==========================================
 
-// Añadir un juego asociándolo al ID del usuario que lo crea
 export const addGame = async (name, description, creatorId) => {
   try {
     await addDoc(collection(db, "games"), {
       name,
       description,
-      creatorId, // Filtro para que no sea global
+      creatorId, 
       createdAt: new Date()
     });
   } catch (error) {
@@ -48,8 +40,6 @@ export const addGame = async (name, description, creatorId) => {
     throw error;
   }
 };
-
-// Escuchar los juegos creados ÚNICAMENTE por el usuario logueado
 export const getGamesStream = (userId, callback) => {
   if (!userId) return () => {};
   
@@ -64,7 +54,6 @@ export const getGamesStream = (userId, callback) => {
   });
 };
 
-// Actualizar datos de un juego
 export const updateGame = async (gameId, name, description) => {
   try {
     const gameRef = doc(db, "games", gameId);
@@ -75,7 +64,6 @@ export const updateGame = async (gameId, name, description) => {
   }
 };
 
-// Eliminar un juego de la lista
 export const deleteGame = async (gameId) => {
   try {
     const gameRef = doc(db, "games", gameId);
@@ -86,11 +74,6 @@ export const deleteGame = async (gameId) => {
   }
 };
 
-// ==========================================
-// 📝 SERVICIOS DE PARTIDAS (Compartidas con Amigos)
-// ==========================================
-
-// Escuchar partidas de un juego donde yo esté incluido en el array 'sharedWith'
 export const getMatchesStream = (gameId, callback) => {
   const currentUser = auth.currentUser;
   if (!currentUser || !gameId) return () => {};
@@ -103,7 +86,6 @@ export const getMatchesStream = (gameId, callback) => {
   return onSnapshot(q, (snapshot) => {
     const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Ordenar por fecha descendente
     const sortedMatches = matches.sort((a, b) => {
       const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : 0;
       const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : 0;
@@ -114,7 +96,6 @@ export const getMatchesStream = (gameId, callback) => {
   });
 };
 
-// Eliminar una partida del historial sabiendo a qué juego pertenece
 export const deleteMatch = async (gameId, matchId) => {
   try {
     const matchRef = doc(db, "games", gameId, "matches", matchId);

@@ -56,31 +56,26 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Escucha de Juegos filtrados por usuario logueado
   useEffect(() => {
     if (!user) return;
     const unsubscribeGames = getGamesStream(user.uid, (updatedGames) => setGames(updatedGames));
     return () => unsubscribeGames();
   }, [user]);
 
-  // Escucha de Partidas del juego seleccionado
   useEffect(() => {
     if (!user || !selectedGame) return;
     const unsubscribeMatches = getMatchesStream(selectedGame.id, (updatedMatches) => setMatches(updatedMatches));
     return () => unsubscribeMatches();
   }, [user, selectedGame]);
 
-  // Escucha de Amigos y Solicitudes
   useEffect(() => {
     if (!user) return;
 
-    // Solicitudes recibidas pendientes
     const qRequests = query(collection(db, 'friendRequests'), where('toUid', '==', user.uid), where('status', '==', 'pending'));
     const unsubRequests = onSnapshot(qRequests, (snapshot) => {
       setReceivedRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    // Amigos aceptados
     const qFriends = query(collection(db, 'friendRequests'), where('status', '==', 'accepted'));
     const unsubFriends = onSnapshot(qFriends, (snapshot) => {
       const list = [];
@@ -95,7 +90,6 @@ function App() {
     return () => { unsubRequests(); unsubFriends(); };
   }, [user]);
 
-  // Manejo de Auth
   const handleRegister = async (e) => {
     e.preventDefault(); 
     setError('');
