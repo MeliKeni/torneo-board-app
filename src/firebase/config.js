@@ -3,12 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBDHsUYaZWU0I-ofJ1fJZIczcqlptwb3JY",
-  authDomain: "torneo-app-v2.firebaseapp.com",
-  projectId: "torneo-app-v2",
-  storageBucket: "torneo-app-v2.firebasestorage.app",
-  messagingSenderId: "258639247375",
-  appId: "1:258639247375:web:d5c1f45e2b5a708ccf8b7a"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
