@@ -4,7 +4,7 @@ Aplicación web para registrar partidas de juegos de mesa, gestionar torneos y t
 
 ## URL de producción
 
->(https://torneo-board-app.vercel.app/)
+https://torneo-board-alzmtsscc-melikenis-projects.vercel.app/
 
 ---
 
